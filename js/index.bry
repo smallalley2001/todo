@@ -1,0 +1,266 @@
+from browser import document, window, html
+import json
+
+# ---------------------------
+# IndexedDB Setup
+# ---------------------------
+DB_NAME = "todo_app_db"
+DB_VERSION = 2
+STORE_NAME = "tasks"
+
+db = None  # Global DB reference
+
+# ---------------------------
+# DB Event Handlers
+# ---------------------------
+def on_upgrade(evt):
+    """Create object store if needed"""
+    db_req = evt.target.result
+    if not db_req.objectStoreNames.contains(STORE_NAME):
+        store = db_req.createObjectStore(
+            STORE_NAME,
+            {"keyPath": "id", "autoIncrement": True}
+        )
+        store.createIndex("task", "task", {"unique": False})
+        store.createIndex("dueDate", "due_date", {"unique": False})
+        store.createIndex("timeDue", "time_due", {"unique": False})
+        store.createIndex("priority", "priority", {"unique": False})
+        store.createIndex("comment", "comment", {"unique": False})
+        store.createIndex("completed", "completed", {"unique": False})
+
+    print("DB upgraded or structure exists")
+
+def on_open_success(evt):
+    global db
+    db = evt.target.result
+    window.setTimeout(load_tasks, 0)
+
+def on_open_error(evt):
+    print("IndexedDB Error:", evt.target.error)
+
+# ---------------------------
+# Open DB
+# ---------------------------
+def open_db():
+    request = window.indexedDB.open(DB_NAME, DB_VERSION)
+    request.bind("upgradeneeded", on_upgrade)
+    request.bind("success", on_open_success)
+    request.bind("error", on_open_error)
+
+# ---------------------------
+# Load Tasks
+# ---------------------------
+def load_tasks():
+    if db is None or STORE_NAME not in db.objectStoreNames:
+        return
+
+    txn = db.transaction([STORE_NAME], "readonly")
+    store = txn.objectStore(STORE_NAME)
+    request = store.getAll()
+
+    def on_load(evt):
+        js_tasks = evt.target.result
+        tasks = [dict(t) for t in js_tasks]
+
+        from datetime import datetime
+
+        # Sort by due date/time, then by task name alphabetically
+        def sort_key(t):
+            d = t.get("due_date", "")
+            t_str = t.get("time_due", "00:00")
+            try:
+                dt = datetime.fromisoformat(f"{d}T{t_str}")
+            except Exception:
+                dt = datetime.max
+            # Task name, lowercase for case-insensitive sort
+            name = t.get("task", "").lower()
+            return (dt, name)
+
+        tasks.sort(key=sort_key)
+        display_tasks(tasks)
+
+    request.bind("success", on_load)
+
+# ---------------------------
+# Display Table
+# ---------------------------
+def display_tasks(tasks):
+    tbody = document["task-body"]
+    tbody.clear()
+
+    from datetime import date, datetime
+    today = date.today()
+
+    for task in tasks:
+        tr = document.createElement("tr")
+
+        due = task.get("due_date", "")
+        time_due = task.get("time_due", "")
+        comment = task.get("comment", "")
+        completed = task.get("completed", False)
+
+        css_class = ""
+        if completed:
+            css_class = "completed-task"
+        else:
+            try:
+                due_date = date.fromisoformat(due)
+                dt_due = datetime.fromisoformat(f"{due}T{time_due or '00:00'}")
+                if due_date == today:
+                    css_class = "due-today-task"
+                elif dt_due < datetime.now():
+                    css_class = "overdue-task"
+            except Exception:
+                pass
+
+        tr.innerHTML = f"""
+            <td class="{css_class}">{task.get('task','')}</td>
+            <td class="{css_class}">{due} {time_due}</td>
+            <td>{task.get('priority', 5)}</td>
+            <td>{comment}</td>
+            <td>{"Done" if completed else "Pending"}</td>
+        """
+
+        # Only the task name column clickable
+        task_td = tr.getElementsByTagName("td")[0]
+
+        # Add clickable-task class without overwriting existing class
+        existing = task_td.getAttribute("class") or ""
+        task_td.setAttribute("class", (existing + " clickable-task").strip())
+
+        # Click navigates to edit page
+        task_td.bind("click", lambda e, tid=task["id"]: edit_task(tid))
+
+        tbody <= tr
+
+# ---------------------------
+# Navigation
+# ---------------------------
+def edit_task(task_id):
+    window.location.href = f"edit_task.html?id={task_id}"
+
+def add_task(evt):
+    window.location.href = "add_task.html"
+    
+def about_app(evt):
+    window.location.href = "about.html"
+
+document["add-task-btn"].bind("click", add_task)
+document["about-btn"].bind("click", about_app)
+
+# ---------------------------
+# Save Tasks to JSON
+# ---------------------------
+def save_tasks(evt):
+    if db is None or STORE_NAME not in db.objectStoreNames:
+        window.alert("DB not ready!")
+        return
+
+    txn = db.transaction([STORE_NAME], "readonly")
+    store = txn.objectStore(STORE_NAME)
+    request = store.getAll()
+
+    def on_get_success(evt):
+        js_tasks = evt.target.result
+        tasks = [dict(t) for t in js_tasks]
+
+        # Convert tasks list to JSON string
+        json_str = json.dumps(tasks, indent=4)
+
+        # Create a Blob and a download link
+        blob = window.Blob.new([json_str], {"type": "application/json"})
+        url = window.URL.createObjectURL(blob)
+
+        a = html.A()
+        a.href = url
+        a.download = "todo_tasks.json"
+        a.click()  # Trigger download
+
+        # Release object URL after download
+        window.setTimeout(lambda: window.URL.revokeObjectURL(url), 1000)
+
+    request.bind("success", on_get_success)
+
+document["save-task-btn"].bind("click", save_tasks)
+
+# ---------------------------
+# Load Tasks from JSON (replace current tasks)
+# ---------------------------
+def load_tasks_from_file(evt):
+    if db is None or STORE_NAME not in db.objectStoreNames:
+        window.alert("DB not ready!")
+        return
+
+    # Confirm replacement
+    if not window.confirm("This will replace your current task list. Continue?"):
+        return
+
+    # Create invisible file input
+    file_input = html.INPUT(type="file", accept=".json")
+    
+    def on_file_change(ev):
+        file = ev.target.files[0]
+        if not file:
+            return
+
+        reader = window.FileReader.new()
+        
+        def on_load(e):
+            try:
+                data = json.loads(reader.result)
+            except Exception as ex:
+                window.alert(f"Error parsing JSON: {ex}")
+                return
+
+            # Validate data format
+            if not isinstance(data, list):
+                window.alert("Invalid format: JSON must be a list of tasks")
+                return
+
+            valid_tasks = []
+            required_keys = ["task", "due_date", "time_due", "priority", "comment", "completed"]
+            
+            for i, t in enumerate(data):
+                if not isinstance(t, dict):
+                    window.alert(f"Task #{i+1} is not an object, skipping")
+                    continue
+                if all(k in t for k in required_keys):
+                    valid_tasks.append(t)
+                else:
+                    window.alert(f"Task #{i+1} missing required keys, skipping")
+
+            if not valid_tasks:
+                window.alert("No valid tasks to load")
+                return
+
+            # Clear current tasks
+            txn_clear = db.transaction([STORE_NAME], "readwrite")
+            store_clear = txn_clear.objectStore(STORE_NAME)
+            clear_req = store_clear.clear()
+
+            def on_clear_success(evt):
+                # Insert new tasks after clearing
+                txn_insert = db.transaction([STORE_NAME], "readwrite")
+                store_insert = txn_insert.objectStore(STORE_NAME)
+                for t in valid_tasks:
+                    store_insert.put(t)
+
+                txn_insert.bind("complete", lambda e: window.setTimeout(load_tasks, 0))
+                window.alert(f"{len(valid_tasks)} tasks loaded successfully!")
+
+            clear_req.bind("success", on_clear_success)
+
+        reader.bind("load", on_load)
+        reader.readAsText(file)
+
+    file_input.bind("change", on_file_change)
+    file_input.click()
+
+
+document["load-task-btn"].bind("click", load_tasks_from_file)
+
+
+# ---------------------------
+# Initialize
+# ---------------------------
+open_db()

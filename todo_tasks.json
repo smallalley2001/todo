@@ -1,0 +1,32 @@
+[
+    {
+        "task": "Busking at Changi Village",
+        "due_date": "2025-12-05",
+        "time_due": "11:00",
+        "priority": 3,
+        "comment": "",
+        "completed": false,
+        "completion_date": "",
+        "id": 6
+    },
+    {
+        "task": "Visit FINs",
+        "due_date": "2025-12-10",
+        "time_due": "16:00",
+        "priority": 3,
+        "comment": "",
+        "completed": false,
+        "completion_date": "",
+        "id": 7
+    },
+    {
+        "task": "Develop ToDo application",
+        "due_date": "2025-12-04",
+        "time_due": "21:00",
+        "priority": 1,
+        "comment": "",
+        "completed": false,
+        "completion_date": "",
+        "id": 8
+    }
+]

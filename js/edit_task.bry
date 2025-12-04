@@ -1,0 +1,141 @@
+from browser import document, window, alert
+from urllib.parse import urlparse, parse_qs
+
+DB_NAME = "todo_app_db"
+DB_VERSION = 2
+STORE_NAME = "tasks"
+
+db = None
+task_id = None
+task_data = None  # Loaded task
+
+# ----------------------------------
+# Parse Task ID from URL
+# ----------------------------------
+query = urlparse(window.location.href).query
+params = parse_qs(query)
+if "id" in params:
+    task_id = int(params["id"][0])
+else:
+    alert("No task ID found!")
+    window.location.href = "index.html"
+
+
+# ----------------------------------
+# DB Handlers
+# ----------------------------------
+def on_upgrade(evt):
+    print("Upgrade not required.")
+
+def on_open_success(evt):
+    global db
+    db = evt.target.result
+    load_task()
+
+def on_open_error(evt):
+    alert("DB error: " + str(evt.target.error))
+
+
+# ----------------------------------
+# Load Task from DB
+# ----------------------------------
+def load_task():
+    global task_data  # <-- use global instead of nonlocal
+    transaction = db.transaction([STORE_NAME], "readonly")
+    store = transaction.objectStore(STORE_NAME)
+    req = store.get(task_id)
+
+    def on_success(evt):
+        global task_data  # <-- also here inside the callback
+        task_data = dict(evt.target.result)
+        fill_form(task_data)
+
+    req.bind("success", on_success)
+
+
+# ----------------------------------
+# Fill Form Inputs
+# ----------------------------------
+def fill_form(task):
+    document["task-name"].value = task.get("task", "")
+    document["task-date"].value = task.get("due_date", "")
+    document["task-time"].value = task.get("time_due", "")
+    document["priority"].value = str(task.get("priority", 5))
+    document["comment"].value = task.get("comment", "")
+    document["completed"].checked = bool(task.get("completed", False))
+
+    # Disable editing if completed
+    if task.get("completed"):
+        disable_editing()
+
+
+def disable_editing():
+    for elem_id in ["task-name", "task-date", "task-time", "priority", "comment", "completed"]:
+        document[elem_id].disabled = True
+    document["update-btn"].disabled = True
+    document["update-btn"].style.display = "none"
+
+
+# ----------------------------------
+# Update Task in DB
+# ----------------------------------
+def update_task(evt):
+    global task_data
+    task_data["task"] = document["task-name"].value
+    task_data["due_date"] = document["task-date"].value
+    task_data["time_due"] = document["task-time"].value
+    task_data["priority"] = int(document["priority"].value or 5)
+    task_data["comment"] = document["comment"].value
+    task_data["completed"] = document["completed"].checked
+
+    transaction = db.transaction([STORE_NAME], "readwrite")
+    store = transaction.objectStore(STORE_NAME)
+    req = store.put(task_data)
+
+    def on_success(evt):
+        #alert("Task updated successfully!")
+        window.location.href = "index.html"
+
+    req.bind("success", on_success)
+
+
+# ----------------------------------
+# Delete Task
+# ----------------------------------
+def delete_task(evt):
+    if not window.confirm("Delete this task?"):
+        return
+
+    transaction = db.transaction([STORE_NAME], "readwrite")
+    store = transaction.objectStore(STORE_NAME)
+    req = store.delete(task_id)
+
+    def on_success(evt):
+        #alert("Task deleted!")
+        window.location.href = "index.html"
+
+    req.bind("success", on_success)
+
+
+# ----------------------------------
+# Cancel → Back to Home
+# ----------------------------------
+def cancel(evt):
+    window.location.href = "index.html"
+
+
+# ----------------------------------
+# Bind Buttons
+# ----------------------------------
+document["update-btn"].bind("click", update_task)
+document["delete-btn"].bind("click", delete_task)
+document["cancel-btn"].bind("click", cancel)
+
+
+# ----------------------------------
+# Open DB
+# ----------------------------------
+request = window.indexedDB.open(DB_NAME, DB_VERSION)
+request.bind("upgradeneeded", on_upgrade)
+request.bind("success", on_open_success)
+request.bind("error", on_open_error)

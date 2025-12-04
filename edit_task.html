@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Task</title>
+
+    <link rel="icon" type="image/png" href="img/todo.png">
+    <link rel="stylesheet" href="css/styles.css">
+
+    <script src="js/brython.js"></script>
+    <script src="js/brython_stdlib.js"></script>
+    <script src="js/load_brython.js"></script>
+</head>
+<body onload="brython()">
+
+<div class="container">
+
+    <img src="img/todo.png" class="logo" alt="App Logo">
+
+    <h1>Edit Task</h1>
+
+    <form id="edit-task-form">
+
+        <div>
+            <label>Task:</label><br>
+            <input type="text" id="task-name" required>
+        </div>
+
+        <div>
+            <label>Due Date:</label><br>
+            <input type="date" id="task-date" required>
+        </div>
+
+        <div>
+            <label>Time:</label><br>
+            <input type="time" id="task-time" required>
+        </div>
+
+        <div>
+            <label>Priority:</label><br>
+            <select id="priority">
+                <option value="1">1 (High)</option>
+                <option value="2">2</option>
+                <option value="3" selected>3</option>
+                <option value="4">4</option>
+                <option value="5">5 (Low)</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Comment:</label><br>
+            <textarea id="comment" rows="3"></textarea>
+        </div>
+
+        <!-- Added Completed Checkbox -->
+        <div>
+            <label>Completed:</label>
+            <input type="checkbox" id="completed">
+        </div>
+
+        <div style="margin-top:15px;">
+            <button type="button" id="update-btn">Update</button>
+            <button type="button" id="delete-btn">Delete</button>
+            <button type="button" id="cancel-btn">Cancel</button>
+        </div>
+
+    </form>
+
+</div>
+
+<script type="text/python" src="js/edit_task.bry"></script>
+
+</body>
+</html>

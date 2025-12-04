@@ -1,0 +1,133 @@
+/* -------------------------
+   General Body & Layout
+------------------------- */
+body {
+    font-family: "Courier", monospace;
+    background-color: #ffffff; 
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;       /* center horizontally */
+    padding-top: 20px;    /* start from top */
+    text-align: center;    /* center all children horizontally */
+}
+
+/* -------------------------
+   Logo
+------------------------- */
+.logo {
+    width: 100px;
+    height: 100px;
+    display: block;
+    margin: 0 auto 10px auto;
+}
+
+/* -------------------------
+   Headings
+------------------------- */
+h1, h2 {
+    margin: 5px 0;
+}
+
+/* -------------------------
+   Task Table
+------------------------- */
+.todo-list {
+    width: 90%;
+    margin: 20px auto;
+    border-collapse: collapse;
+}
+
+.todo-list th, .todo-list td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+}
+
+.todo-list th {
+    background-color: #add8e6;  /* light blue header */
+}
+
+/* -------------------------
+   Task Styles
+------------------------- */
+.completed-task {
+    text-decoration: line-through;
+    color: #888;
+}
+
+.overdue-task {
+    font-weight: bold;
+    color: #ff4500;  /* red-ish for overdue */
+}
+
+.due-today-task {
+    font-weight: bold;
+    color: #1e90ff;  /* blue for tasks due today */
+}
+
+/* -------------------------
+   Buttons
+------------------------- */
+button {
+    font-family: "Courier", monospace;
+    background-color: #add8e6;  /* light blue */
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    width: 120px;               /* same width for all buttons */
+    cursor: pointer;
+    font-size: 16px;
+    margin: 5px;
+    text-align: center;
+    transition: background-color 0.2s ease;
+}
+
+button:hover {
+    background-color: #87cefa;  /* slightly darker blue on hover */
+}
+
+/* -------------------------
+   Inputs (for future Add Task)
+------------------------- */
+input, select {
+    font-family: "Courier", monospace;
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    width: 200px;
+    text-align: left;
+}
+
+/* -------------------------
+   Clickable Task Name
+------------------------- */
+.clickable-task {
+    cursor: pointer;
+    text-decoration: underline;
+    color: #0077cc;
+}
+
+.clickable-task:hover {
+    color: #005a99;
+}
+
+/* Make lists left-aligned inside container */
+.container ul,
+.container ol {
+    text-align: left;      /* Align text to left */
+    padding-left: 20px;    /* Standard indent for bullets/numbers */
+    margin-left: 0;        /* Remove extra margin if needed */
+}
+
+/* Optional: reduce space between bullet/number and text */
+.container ul li,
+.container ol li {
+    margin-bottom: 0.5em;  /* Slight spacing between items */
+    line-height: 1.4;      /* Optional: adjust spacing for readability */
+}

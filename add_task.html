@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Task - Todo List</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="img/todo.png">
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Brython Libraries -->
+    <script src="js/brython.js"></script>
+    <script src="js/brython_stdlib.js"></script>
+    <script src="js/load_brython.js"></script>
+</head>
+<body onload="brython()">
+
+<div class="container">
+
+    <!-- Logo -->
+    <img src="img/todo.png" class="logo" alt="App Logo">
+
+    <!-- Page Title -->
+    <h1>Add Task</h1>
+
+    <!-- Task Form -->
+    <form id="add-task-form">
+
+        <div>
+            <label for="task-name">Task Name:</label><br>
+            <input type="text" id="task-name" name="task-name" required>
+        </div>
+
+        <div>
+            <label for="due-date">Due Date:</label><br>
+            <input type="date" id="due-date" name="due-date" required>
+        </div>
+
+        <div>
+            <label for="time-due">Time Due:</label><br>
+            <input type="time" id="time-due" name="time-due" required>
+        </div>
+
+        <div>
+            <label for="priority">Priority:</label><br>
+            <select id="priority" name="priority">
+                <option value="1">1 (Highest)</option>
+                <option value="2">2</option>
+                <option value="3" selected>3</option>
+                <option value="4">4</option>
+                <option value="5">5 (Lowest)</option>
+            </select>
+        </div>
+
+        <div>
+            <label for="comment">Comment:</label><br>
+            <textarea id="comment" name="comment" rows="3" placeholder="Optional comment"></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div style="margin-top: 15px;">
+            <button type="button" id="save-btn">Save</button>
+            <button type="button" id="cancel-btn">Cancel</button>
+        </div>
+
+    </form>
+
+</div>
+
+<!-- Brython Logic -->
+<script type="text/python" src="js/add_task.bry"></script>
+
+</body>
+</html>

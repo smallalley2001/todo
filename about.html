@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Todo List App</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="img/todo.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Brython Libraries -->
+    <script src="js/brython.js"></script>
+    <script src="js/brython_stdlib.js"></script>
+    <script src="js/load_brython.js"></script>
+</head>
+<body>
+    <div class="container">
+
+        <img src="img/todo.png" class="logo" alt="App Logo">
+
+        <h1>About Todo List App</h1>
+        <h2>Version 1.0</h2>
+
+        <p>
+            The Todo List application helps you manage your tasks efficiently.
+            Tasks that are <strong>not completed</strong> can be edited directly. Completed tasks are locked to prevent accidental changes.
+        </p>
+
+        <h3>Features:</h3>
+        <ul>
+            <li>Add, edit, and delete tasks.</li>
+            <li>Tasks are sorted by due date and time; tasks with the same date/time are sorted alphabetically.</li>
+            <li>Save your current task list to a JSON file for backup or sharing.</li>
+            <li>Load a previously saved task list. <strong>Note:</strong> Loading a list will <em>replace</em> the current tasks.</li>
+            <li>Clear overdue and completed tasks as needed.</li>
+        </ul>
+
+        <h3>Installation as a PWA:</h3>
+        <ol>
+            <li>Open the application in your browser.</li>
+            <li>Look for the "Install" option in your browser menu (or on Chrome/Edge, the "+" icon in the address bar).</li>
+            <li>Click "Install" to add the app to your desktop or mobile home screen.</li>
+        </ol>
+
+        <h3>Important Notes:</h3>
+        <ul>
+            <li>Your tasks are stored in the browser's IndexedDB. If you clear browser data, all tasks will be lost.</li>
+            <li>To preserve your tasks, you can use the "Save" button to export them to a JSON file.</li>
+            <li>When loading a JSON file, ensure it is properly formatted and contains the required fields: <em>task, due_date, time_due, priority, comment, completed</em>.</li>
+        </ul>
+
+        <button id="back-btn">Back</button>
+
+    </div>
+
+    <script type="text/python" src="js/about.bry"></script>
+</body>
+</html>
