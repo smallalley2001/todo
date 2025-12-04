@@ -1,18 +1,18 @@
 const CACHE_NAME = 'todo-app-cache-v1';
 const urlsToCache = [
-  '/smallalley2001/',
-  '/smallalley2001/index.html',
-  '/smallalley2001/about.html',
-  '/smallalley2001/css/styles.css',
-  '/smallalley2001/js/brython.js',
-  '/smallalley2001/js/brython_stdlib.js',
-  '/smallalley2001/js/load_brython.js',
-  '/smallalley2001/js/index.bry',
-  '/smallalley2001/js/edit_task.bry',
-  '/smallalley2001/js/about.bry',
-  '/smallalley2001/img/todo.png',
-  '/smallalley2001/img/todo-192.png',
-  '/smallalley2001/img/todo-512.png'
+  '/todo/',
+  '/todo/index.html',
+  '/todo/about.html',
+  '/todo/css/styles.css',
+  '/todo/js/brython.js',
+  '/todo/js/brython_stdlib.js',
+  '/todo/js/load_brython.js',
+  '/todo/js/index.bry',
+  '/todo/js/edit_task.bry',
+  '/todo/js/about.bry',
+  '/todo/img/todo.png',
+  '/todo/img/todo-192.png',
+  '/todo/img/todo-512.png'
 ];
 
 // Install Service Worker and cache files
