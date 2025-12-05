@@ -1,28 +1,25 @@
-const BASE = self.registration.scope.replace(location.origin, "");
-const CACHE_NAME = "wordle-cache-v5"; // bumped version
+const CACHE_NAME = 'todo-app-cache-v4';
 
-// Pre-cache all static resources
+// Pre-cache all static resources, including Brython scripts
 const urlsToCache = [
-  BASE,
-  BASE + "index.html",
-  BASE + "classic.html",
-  BASE + "advance.html",
-  BASE + "about.html",
-  BASE + "css/styles.css",
-  BASE + "js/brython.js",
-  BASE + "js/brython_stdlib.js",
-  BASE + "js/load_brython.js",
-  BASE + "js/classic.bry",
-  BASE + "js/advance.bry",
-  BASE + "js/index.bry",
-  BASE + "img/wordle.png",
-  BASE + "img/wordle_192.png",
-  BASE + "img/wordle_512.png",
-  BASE + "manifest.json"
+  '/todo/',
+  '/todo/index.html',
+  '/todo/about.html',
+  '/todo/css/styles.css',
+  '/todo/js/brython.js',
+  '/todo/js/brython_stdlib.js',
+  '/todo/js/load_brython.js',
+  '/todo/js/index.bry',
+  '/todo/js/edit_task.bry',
+  '/todo/js/about.bry',
+  // Add all other Brython scripts here to pre-cache
+  '/todo/img/todo.png',
+  '/todo/img/todo-192.png',
+  '/todo/img/todo-512.png'
 ];
 
-// Install: pre-cache everything
-self.addEventListener("install", event => {
+// Install: cache everything
+self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
@@ -31,36 +28,42 @@ self.addEventListener("install", event => {
 });
 
 // Activate: remove old caches
-self.addEventListener("activate", event => {
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
+    caches.keys().then(cacheNames =>
       Promise.all(
-        keys.map(k => k !== CACHE_NAME ? caches.delete(k) : null)
+        cacheNames.map(cache => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
+          }
+        })
       )
     )
   );
   self.clients.claim();
 });
 
-// Fetch: offline-first + runtime caching + navigation fallback
-self.addEventListener("fetch", event => {
+// Fetch: offline-first with runtime caching and navigation fallback
+self.addEventListener('fetch', event => {
   const request = event.request;
-  const urlWithoutQuery = request.url.split("?")[0];
+  const urlWithoutQuery = request.url.split('?')[0];
 
   event.respondWith(
     caches.match(urlWithoutQuery, { ignoreSearch: true }).then(cached => {
       if (cached) return cached;
 
+      // Fetch from network and cache dynamically
       return fetch(request).then(response => {
-        // Cache all GET requests dynamically
-        if (request.method === "GET" && response.status === 200) {
-          caches.open(CACHE_NAME).then(cache => cache.put(urlWithoutQuery, response.clone()));
+        if (request.method === 'GET' && response.status === 200) {
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(urlWithoutQuery, response.clone());
+          });
         }
         return response;
       }).catch(() => {
-        // Offline fallback for navigation (HTML requests)
-        if (request.destination === "document") {
-          return caches.match(BASE + "index.html");
+        // Offline navigation fallback for HTML pages
+        if (request.destination === 'document') {
+          return caches.match('/todo/index.html');
         }
       });
     })
