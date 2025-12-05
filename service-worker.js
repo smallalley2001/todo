@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todo-app-cache-v1';
+const CACHE_NAME = 'todo-app-cache-v2'; // <-- bumped version to ensure update
 const urlsToCache = [
   '/todo/',
   '/todo/index.html',
@@ -15,7 +15,7 @@ const urlsToCache = [
   '/todo/img/todo-512.png'
 ];
 
-// Install Service Worker and cache files
+// Install
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -23,10 +23,10 @@ self.addEventListener('install', event => {
   );
 });
 
-// Activate Service Worker
+// Activate
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => 
+    caches.keys().then(cacheNames =>
       Promise.all(
         cacheNames.map(cache => {
           if (cache !== CACHE_NAME) {
@@ -38,10 +38,10 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch cached content first
+// Fetch (ignore ? timestamps)
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    caches.match(event.request, { ignoreSearch: true })
       .then(response => response || fetch(event.request))
   );
 });
