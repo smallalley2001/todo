@@ -1,7 +1,10 @@
-const BASE = self.registration.scope.replace(location.origin, "");
-const CACHE_NAME = "gratitude-cache-v7"; // new name (correct app name)
+// Base path — always correct for GitHub Pages subfolder PWAs
+const BASE = new URL("./", self.location).pathname;
 
-// Pre-cache all static resources
+// Update version when deploying changes to force cache refresh
+const CACHE_NAME = "gratitude-cache-v8";
+
+// Static resources to pre-cache
 const urlsToCache = [
   BASE,
   BASE + "index.html",
@@ -26,46 +29,54 @@ const urlsToCache = [
   BASE + "manifest.json"
 ];
 
-// Install
+// Install – cache all static assets up front
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+  );
   self.skipWaiting();
 });
 
-// Activate
+// Activate – remove old caches
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.map(k => k !== CACHE_NAME ? caches.delete(k) : null))
+      Promise.all(
+        keys.map(key => key !== CACHE_NAME ? caches.delete(key) : null)
+      )
     )
   );
   self.clients.claim();
 });
 
-// Fetch: Safe runtime caching
+// Fetch – offline-first strategy + safe runtime caching
 self.addEventListener("fetch", event => {
   const request = event.request;
-  const noQueryURL = request.url.split("?")[0];
+  const reqURL = new URL(request.url);
+
+  // Normalize URL (remove origin & query)
+  const cleanPath = reqURL.pathname.replace(self.registration.scope, BASE);
 
   event.respondWith(
-    caches.match(noQueryURL, { ignoreSearch: true }).then(cached => {
+    caches.match(cleanPath, { ignoreSearch: true }).then(cached => {
       if (cached) return cached;
 
-      return fetch(request).then(response => {
-        if (request.method === "GET" && response.ok) {
-          try {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(noQueryURL, clone));
-          } catch (err) {
-            console.warn("[SW] Skip caching — response not cloneable:", noQueryURL);
+      return fetch(request)
+        .then(response => {
+          if (request.method === "GET" && response.ok) {
+            const clone = response.clone(); // safe clone
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(cleanPath, clone);
+            });
           }
-        }
-        return response;
-      }).catch(() => {
-        if (request.destination === "document") {
-          return caches.match(BASE + "index.html");
-        }
-      });
+          return response;
+        })
+        .catch(() => {
+          // Offline fallback only for navigation requests (HTML)
+          if (request.mode === "navigate") {
+            return caches.match(BASE + "index.html");
+          }
+        });
     })
   );
 });
