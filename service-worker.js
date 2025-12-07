@@ -1,12 +1,14 @@
 // Todo App PWA Service Worker - Auto-cache folders, query-safe fetch
-const CACHE_NAME = 'todo-app-cache-v3';
+const CACHE_NAME = 'todo-app-cache-v4';
 const BASE = '/todo/';
 
-// Core files
+// Core files (all main pages)
 const CORE_ASSETS = [
   `${BASE}`,
   `${BASE}index.html`,
   `${BASE}about.html`,
+  `${BASE}edit_task.html`,
+  `${BASE}add_task.html`,
 ];
 
 // Known files in each folder
@@ -16,6 +18,7 @@ const JS_FILES = [
   'load_brython.js',
   'index.bry',
   'edit_task.bry',
+  'add_task.bry',
   'about.bry',
 ];
 
@@ -27,7 +30,7 @@ const IMG_FILES = [
   'todo-512.png',
 ];
 
-// Combine all assets with folder paths
+// Combine all assets with correct folder paths
 const ASSETS = [
   ...CORE_ASSETS,
   ...JS_FILES.map(f => `${BASE}js/${f}`),
@@ -35,7 +38,7 @@ const ASSETS = [
   ...IMG_FILES.map(f => `${BASE}img/${f}`),
 ];
 
-// Install: cache all assets
+// Install: cache everything
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
@@ -51,7 +54,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: remove only old Todo caches
+// Activate: remove old Todo caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -65,17 +68,15 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: offline-first strategy with query-safe matching
+// Fetch: offline-first strategy + ignore timestamps
 self.addEventListener('fetch', (event) => {
   const request = event.request;
 
-  // Only handle requests within Todo app scope
   if (!request.url.includes(BASE)) return;
 
   event.respondWith((async () => {
-    // Strip query string for cache matching
     const urlWithoutQuery = new URL(request.url);
-    urlWithoutQuery.search = '';
+    urlWithoutQuery.search = ''; // Remove '?ts=...' timestamps
 
     const cached = await caches.match(urlWithoutQuery.toString());
     if (cached) return cached;
@@ -88,11 +89,9 @@ self.addEventListener('fetch', (event) => {
       }
       return response;
     } catch (err) {
-      // Offline fallback for HTML pages
       if (request.destination === 'document') {
         return caches.match(`${BASE}index.html`);
       }
-      // Offline fallback for other assets
       return new Response('Offline resource not available', {
         status: 404,
         statusText: 'Offline',
