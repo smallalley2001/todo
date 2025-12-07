@@ -2,20 +2,20 @@
   "name": "Todo List App",
   "short_name": "TodoList",
   "description": "A simple PWA Todo List application with save/load and offline support.",
-  "start_url": "/todo/index.html",
-  "scope": "/todo/",
+  "start_url": "index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/todo/img/todo-192.png",
+      "src": "img/todo-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/todo/img/todo-512.png",
+      "src": "img/todo-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
