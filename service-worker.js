@@ -1,25 +1,41 @@
-// Todo App PWA Service Worker
-const CACHE_NAME = 'todo-app-cache-v2';
+// Todo App PWA Service Worker - Auto-cache folders, query-safe fetch
+const CACHE_NAME = 'todo-app-cache-v3';
 const BASE = '/todo/';
 
-// List of assets to cache
-const ASSETS = [
+// Core files
+const CORE_ASSETS = [
   `${BASE}`,
   `${BASE}index.html`,
   `${BASE}about.html`,
-  `${BASE}css/styles.css`,
-  `${BASE}js/brython.js`,
-  `${BASE}js/brython_stdlib.js`,
-  `${BASE}js/load_brython.js`,
-  `${BASE}js/index.bry`,
-  `${BASE}js/edit_task.bry`,
-  `${BASE}js/about.bry`,
-  `${BASE}img/todo.png`,
-  `${BASE}img/todo-192.png`,
-  `${BASE}img/todo-512.png`
 ];
 
-// Install: pre-cache all assets safely
+// Known files in each folder
+const JS_FILES = [
+  'brython.js',
+  'brython_stdlib.js',
+  'load_brython.js',
+  'index.bry',
+  'edit_task.bry',
+  'about.bry',
+];
+
+const CSS_FILES = ['styles.css'];
+
+const IMG_FILES = [
+  'todo.png',
+  'todo-192.png',
+  'todo-512.png',
+];
+
+// Combine all assets with folder paths
+const ASSETS = [
+  ...CORE_ASSETS,
+  ...JS_FILES.map(f => `${BASE}js/${f}`),
+  ...CSS_FILES.map(f => `${BASE}css/${f}`),
+  ...IMG_FILES.map(f => `${BASE}img/${f}`),
+];
+
+// Install: cache all assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
@@ -49,7 +65,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: offline-first strategy with fallback
+// Fetch: offline-first strategy with query-safe matching
 self.addEventListener('fetch', (event) => {
   const request = event.request;
 
@@ -57,15 +73,18 @@ self.addEventListener('fetch', (event) => {
   if (!request.url.includes(BASE)) return;
 
   event.respondWith((async () => {
-    const cached = await caches.match(request);
+    // Strip query string for cache matching
+    const urlWithoutQuery = new URL(request.url);
+    urlWithoutQuery.search = '';
+
+    const cached = await caches.match(urlWithoutQuery.toString());
     if (cached) return cached;
 
     try {
       const response = await fetch(request);
       if (response.ok && request.method === 'GET') {
-        const responseClone = response.clone();
         const cache = await caches.open(CACHE_NAME);
-        await cache.put(request, responseClone);
+        await cache.put(urlWithoutQuery.toString(), response.clone());
       }
       return response;
     } catch (err) {
