@@ -1,82 +1,84 @@
-// Base path — always correct for GitHub Pages subfolder PWAs
-const BASE = new URL("./", self.location).pathname;
+// Todo App PWA Service Worker
+const CACHE_NAME = 'todo-app-cache-v2';
+const BASE = '/todo/';
 
-// Update version when deploying changes to force cache refresh
-const CACHE_NAME = "gratitude-cache-v8";
-
-// Static resources to pre-cache
-const urlsToCache = [
-  BASE,
-  BASE + "index.html",
-  BASE + "about.html",
-  BASE + "entries.html",
-  BASE + "print.html",
-  BASE + "printout.html",
-  BASE + "settings.html",
-  BASE + "css/styles.css",
-  BASE + "js/brython.js",
-  BASE + "js/brython_stdlib.js",
-  BASE + "js/load_brython.js",
-  BASE + "js/gratitude_journal_page_1.bry",
-  BASE + "js/gratitude_journal_page_2.bry",
-  BASE + "js/gratitude_journal_page_3.bry",
-  BASE + "js/gratitude_journal_page_4.bry",
-  BASE + "js/gratitude_journal_page_5.bry",
-  BASE + "js/gratitude_journal_page_6.bry",
-  BASE + "img/gratitude_journal.png",
-  BASE + "img/gratitude_journal_192.png",
-  BASE + "img/gratitude_journal_512.png",
-  BASE + "manifest.json"
+// List of assets to cache
+const ASSETS = [
+  `${BASE}`,
+  `${BASE}index.html`,
+  `${BASE}about.html`,
+  `${BASE}css/styles.css`,
+  `${BASE}js/brython.js`,
+  `${BASE}js/brython_stdlib.js`,
+  `${BASE}js/load_brython.js`,
+  `${BASE}js/index.bry`,
+  `${BASE}js/edit_task.bry`,
+  `${BASE}js/about.bry`,
+  `${BASE}img/todo.png`,
+  `${BASE}img/todo-192.png`,
+  `${BASE}img/todo-512.png`
 ];
 
-// Install – cache all static assets up front
-self.addEventListener("install", event => {
+// Install: pre-cache all assets safely
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        ASSETS.map((url) =>
+          cache.add(url).catch((err) =>
+            console.warn('Failed to cache:', url, err)
+          )
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
 
-// Activate – remove old caches
-self.addEventListener("activate", event => {
+// Activate: remove only old Todo caches
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
+    caches.keys().then((keys) =>
       Promise.all(
-        keys.map(key => key !== CACHE_NAME ? caches.delete(key) : null)
+        keys
+          .filter((key) => key.startsWith('todo-app-cache-') && key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
       )
     )
   );
   self.clients.claim();
 });
 
-// Fetch – offline-first strategy + safe runtime caching
-self.addEventListener("fetch", event => {
+// Fetch: offline-first strategy with fallback
+self.addEventListener('fetch', (event) => {
   const request = event.request;
-  const reqURL = new URL(request.url);
 
-  // Normalize URL (remove origin & query)
-  const cleanPath = reqURL.pathname.replace(self.registration.scope, BASE);
+  // Only handle requests within Todo app scope
+  if (!request.url.includes(BASE)) return;
 
-  event.respondWith(
-    caches.match(cleanPath, { ignoreSearch: true }).then(cached => {
-      if (cached) return cached;
+  event.respondWith((async () => {
+    const cached = await caches.match(request);
+    if (cached) return cached;
 
-      return fetch(request)
-        .then(response => {
-          if (request.method === "GET" && response.ok) {
-            const clone = response.clone(); // safe clone
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(cleanPath, clone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          // Offline fallback only for navigation requests (HTML)
-          if (request.mode === "navigate") {
-            return caches.match(BASE + "index.html");
-          }
-        });
-    })
-  );
+    try {
+      const response = await fetch(request);
+      if (response.ok && request.method === 'GET') {
+        const responseClone = response.clone();
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(request, responseClone);
+      }
+      return response;
+    } catch (err) {
+      // Offline fallback for HTML pages
+      if (request.destination === 'document') {
+        return caches.match(`${BASE}index.html`);
+      }
+      // Offline fallback for other assets
+      return new Response('Offline resource not available', {
+        status: 404,
+        statusText: 'Offline',
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    }
+  })());
 });
