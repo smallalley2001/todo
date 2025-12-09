@@ -1,5 +1,5 @@
 // Todo App PWA Service Worker - Auto-cache folders (GitHub Pages version)
-const CACHE_NAME = 'todo-app-cache-v5';
+const CACHE_NAME = 'todo-app-cache-v6';
 const BASE = '';
 
 // Core files
