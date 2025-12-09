@@ -64,7 +64,7 @@ def load_tasks():
 
         from datetime import datetime
 
-        # Sort by due date/time, then by task name alphabetically
+        # Sort by due date/time, then task name alphabetically
         def sort_key(t):
             d = t.get("due_date", "")
             t_str = t.get("time_due", "00:00")
@@ -72,7 +72,6 @@ def load_tasks():
                 dt = datetime.fromisoformat(f"{d}T{t_str}")
             except Exception:
                 dt = datetime.max
-            # Task name, lowercase for case-insensitive sort
             name = t.get("task", "").lower()
             return (dt, name)
 
@@ -113,22 +112,31 @@ def display_tasks(tasks):
             except Exception:
                 pass
 
+        # Weekday format
+        dow_label = ""
+        try:
+            if due:
+                due_date_obj = date.fromisoformat(due)
+                dow_label = due_date_obj.strftime("%a")  # Mon, Tue, ...
+        except Exception:
+            pass
+
+        # Date/Time format → 2025-12-05@14:00 Fri
+        due_display = f"{due}@{time_due} {dow_label}".strip()
+
         tr.innerHTML = f"""
-            <td class="{css_class}">{task.get('task','')}</td>
-            <td class="{css_class}">{due} {time_due}</td>
+            <td class="{css_class}">{task.get('task',"")}</td>
+            <td class="{css_class}">{due_display}</td>
             <td>{task.get('priority', 5)}</td>
             <td>{comment}</td>
             <td>{"Done" if completed else "Pending"}</td>
         """
 
-        # Only the task name column clickable
         task_td = tr.getElementsByTagName("td")[0]
 
-        # Add clickable-task class without overwriting existing class
         existing = task_td.getAttribute("class") or ""
         task_td.setAttribute("class", (existing + " clickable-task").strip())
 
-        # Click navigates to edit page
         task_td.bind("click", lambda e, tid=task["id"]: edit_task(tid))
 
         tbody <= tr
@@ -141,7 +149,7 @@ def edit_task(task_id):
 
 def add_task(evt):
     window.location.href = "add_task.html"
-    
+
 def about_app(evt):
     window.location.href = "about.html"
 
@@ -149,7 +157,7 @@ document["add-task-btn"].bind("click", add_task)
 document["about-btn"].bind("click", about_app)
 
 # ---------------------------
-# Save Tasks to JSON
+# Save Tasks
 # ---------------------------
 def save_tasks(evt):
     if db is None or STORE_NAME not in db.objectStoreNames:
@@ -164,19 +172,15 @@ def save_tasks(evt):
         js_tasks = evt.target.result
         tasks = [dict(t) for t in js_tasks]
 
-        # Convert tasks list to JSON string
         json_str = json.dumps(tasks, indent=4)
-
-        # Create a Blob and a download link
         blob = window.Blob.new([json_str], {"type": "application/json"})
         url = window.URL.createObjectURL(blob)
 
         a = html.A()
         a.href = url
         a.download = "todo_tasks.json"
-        a.click()  # Trigger download
+        a.click()
 
-        # Release object URL after download
         window.setTimeout(lambda: window.URL.revokeObjectURL(url), 1000)
 
     request.bind("success", on_get_success)
@@ -184,18 +188,16 @@ def save_tasks(evt):
 document["save-task-btn"].bind("click", save_tasks)
 
 # ---------------------------
-# Load Tasks from JSON (replace current tasks)
+# Load Tasks (replace existing)
 # ---------------------------
 def load_tasks_from_file(evt):
     if db is None or STORE_NAME not in db.objectStoreNames:
         window.alert("DB not ready!")
         return
 
-    # Confirm replacement
     if not window.confirm("This will replace your current task list. Continue?"):
         return
 
-    # Create invisible file input
     file_input = html.INPUT(type="file", accept=".json")
     
     def on_file_change(ev):
@@ -212,7 +214,6 @@ def load_tasks_from_file(evt):
                 window.alert(f"Error parsing JSON: {ex}")
                 return
 
-            # Validate data format
             if not isinstance(data, list):
                 window.alert("Invalid format: JSON must be a list of tasks")
                 return
@@ -221,27 +222,23 @@ def load_tasks_from_file(evt):
             required_keys = ["task", "due_date", "time_due", "priority", "comment", "completed"]
             
             for i, t in enumerate(data):
-                if not isinstance(t, dict):
-                    window.alert(f"Task #{i+1} is not an object, skipping")
-                    continue
-                if all(k in t for k in required_keys):
+                if isinstance(t, dict) and all(k in t for k in required_keys):
                     valid_tasks.append(t)
                 else:
-                    window.alert(f"Task #{i+1} missing required keys, skipping")
+                    window.alert(f"Task #{i+1} missing required fields, skipping")
 
             if not valid_tasks:
                 window.alert("No valid tasks to load")
                 return
 
-            # Clear current tasks
             txn_clear = db.transaction([STORE_NAME], "readwrite")
             store_clear = txn_clear.objectStore(STORE_NAME)
             clear_req = store_clear.clear()
 
             def on_clear_success(evt):
-                # Insert new tasks after clearing
                 txn_insert = db.transaction([STORE_NAME], "readwrite")
                 store_insert = txn_insert.objectStore(STORE_NAME)
+
                 for t in valid_tasks:
                     store_insert.put(t)
 
@@ -256,9 +253,7 @@ def load_tasks_from_file(evt):
     file_input.bind("change", on_file_change)
     file_input.click()
 
-
 document["load-task-btn"].bind("click", load_tasks_from_file)
-
 
 # ---------------------------
 # Initialize
